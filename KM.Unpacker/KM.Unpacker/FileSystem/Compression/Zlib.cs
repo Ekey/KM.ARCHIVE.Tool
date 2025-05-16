@@ -2,6 +2,7 @@
 using System.IO;
 using System.IO.Compression;
 using System.Net;
+using System.Security.AccessControl;
 using System.Text;
 
 namespace KM.Unpacker
@@ -26,6 +27,7 @@ namespace KM.Unpacker
             var TOutMemoryStream = new MemoryStream();
             using (MemoryStream TMemoryStream = new MemoryStream(lpBuffer))
             {
+                Int32 dwAdditionalLength = 0;
                 UInt32 dwMagic = TMemoryStream.ReadUInt32();
 
                 if (dwMagic != 0xFACECAFE)
@@ -53,6 +55,11 @@ namespace KM.Unpacker
                 UInt32 dwResourceType = TMemoryStream.ReadUInt32(true);
                 String m_ResourceType = iFromHexString(dwResourceType.ToString("X8"));
 
+                if (m_ResourceType == "vdeo")
+                {
+                    dwAdditionalLength = 4;
+                }
+
                 if (m_FullPath.Contains("__Unknown"))
                 {
                     m_FullPath += "." + m_ResourceType;
@@ -60,16 +67,9 @@ namespace KM.Unpacker
 
                 if (wUnknown2 != 1)
                 {
-                    Int32 dwAdditionalLength = 0;
-
-                    if (m_ResourceType == "vdeo")
-                    {
-                        dwAdditionalLength = 4;
-                    }
-
                     Byte[] lpResult = new Byte[lpBuffer.Length - 42 - dwAdditionalLength];
 
-                    Array.Copy(lpBuffer, 42, lpResult, dwAdditionalLength, lpResult.Length);
+                    Array.Copy(lpBuffer, 42 + dwAdditionalLength, lpResult, 0, lpResult.Length);
 
                     File.WriteAllBytes(m_FullPath, lpResult);
 
@@ -88,12 +88,18 @@ namespace KM.Unpacker
                     TDeflateStream.CopyTo(TOutMemoryStream);
                     TDeflateStream.Dispose();
                 }
+
                 TMemoryStream.Dispose();
+
+                lpBuffer = TOutMemoryStream.ToArray();
+
+                if (m_ResourceType == "vdeo")
+                {
+                    Array.Copy(lpBuffer, dwAdditionalLength, lpBuffer, 0, lpBuffer.Length - dwAdditionalLength);
+                }
+
+                File.WriteAllBytes(m_FullPath, lpBuffer);
             }
-
-            lpBuffer = TOutMemoryStream.ToArray();
-
-            File.WriteAllBytes(m_FullPath, lpBuffer);
         }
     }
 }
