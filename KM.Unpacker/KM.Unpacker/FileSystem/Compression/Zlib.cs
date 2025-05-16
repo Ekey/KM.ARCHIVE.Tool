@@ -1,13 +1,26 @@
 ﻿using System;
 using System.IO;
 using System.IO.Compression;
-using System.Runtime.Remoting.Messaging;
+using System.Text;
 
 namespace KM.Unpacker
 {
     class Zlib
     {
-        public static Byte[] iTryDecompress(Byte[] lpBuffer, Int32 dwOffset = 2)
+
+        private static String iFromHexString(String m_HexString)
+        {
+            var lpTemp = new Byte[m_HexString.Length / 2];
+
+            for (Int32 i = 0; i < lpTemp.Length; i++)
+            {
+                lpTemp[i] = Convert.ToByte(m_HexString.Substring(i * 2, 2), 16);
+            }
+
+            return Encoding.UTF8.GetString(lpTemp);
+        }
+
+        public static void iTryToDecompress(String m_FullPath, Byte[] lpBuffer, Int32 dwOffset = 2)
         {
             var TOutMemoryStream = new MemoryStream();
             using (MemoryStream TMemoryStream = new MemoryStream(lpBuffer))
@@ -16,12 +29,13 @@ namespace KM.Unpacker
 
                 if (dwMagic != 0xFACECAFE)
                 {
-                    return lpBuffer;
+                    File.WriteAllBytes(m_FullPath, lpBuffer);
                 }
 
                 Int32 dwOffset1 = TMemoryStream.ReadInt32();
                 Int16 wUnknown1 = TMemoryStream.ReadInt16();
                 Int16 wUnknown2 = TMemoryStream.ReadInt16();
+                UInt32 dwResourceType = TMemoryStream.ReadUInt32(true);
 
                 if (wUnknown2 != 1)
                 {
@@ -29,10 +43,15 @@ namespace KM.Unpacker
 
                     Array.Copy(lpBuffer, 42, lpResult, 0, lpResult.Length);
 
-                    return lpResult;
+                    File.WriteAllBytes(m_FullPath, lpResult);
                 }
 
-                UInt32 dwResourceType = TMemoryStream.ReadUInt32();
+                String m_ResourceType = iFromHexString(dwResourceType.ToString("X8"));
+
+                if (m_FullPath.Contains("__Unknown"))
+                {
+                    m_FullPath += "." + m_ResourceType;
+                }
 
                 Int32 dwDataSize = TMemoryStream.ReadInt32();
                 Int32 dwUnknown1 = TMemoryStream.ReadInt32();
@@ -49,7 +68,9 @@ namespace KM.Unpacker
                 TMemoryStream.Dispose();
             }
 
-            return TOutMemoryStream.ToArray();
+            lpBuffer = TOutMemoryStream.ToArray();
+
+            File.WriteAllBytes(m_FullPath, lpBuffer);
         }
     }
 }

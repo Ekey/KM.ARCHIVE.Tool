@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Security.Policy;
 
 namespace KM.Unpacker
 {
@@ -68,9 +67,7 @@ namespace KM.Unpacker
 
                     var lpBuffer = TArchiveStream.ReadBytes((Int32)m_Entry.dwSize);
 
-                    lpBuffer = Zlib.iTryDecompress(lpBuffer);
-
-                    File.WriteAllBytes(m_FullPath, lpBuffer);
+                    Zlib.iTryToDecompress(m_FullPath, lpBuffer);
                 }
 
                 TArchiveStream.Dispose();
