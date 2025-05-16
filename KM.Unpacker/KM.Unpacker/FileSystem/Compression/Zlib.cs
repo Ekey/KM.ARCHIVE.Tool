@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.IO.Compression;
+using System.Net;
 using System.Text;
 
 namespace KM.Unpacker
@@ -30,6 +31,8 @@ namespace KM.Unpacker
                 if (dwMagic != 0xFACECAFE)
                 {
                     File.WriteAllBytes(m_FullPath, lpBuffer);
+
+                    return;
                 }
 
                 Int32 dwOffset1 = TMemoryStream.ReadInt32();
@@ -44,6 +47,8 @@ namespace KM.Unpacker
                     Array.Copy(lpBuffer, 42, lpResult, 0, lpResult.Length);
 
                     File.WriteAllBytes(m_FullPath, lpResult);
+
+                    return;
                 }
 
                 String m_ResourceType = iFromHexString(dwResourceType.ToString("X8"));
