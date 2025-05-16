@@ -30,6 +30,18 @@ namespace KM.Unpacker
 
                 if (dwMagic != 0xFACECAFE)
                 {
+                    if (m_FullPath.Contains("__Unknown"))
+                    {
+                        if (dwMagic == 0x90A0D7B || dwMagic == 0x200A0D7B)
+                        {
+                            m_FullPath += ".json";
+                        }
+                        else if (dwMagic == 0x4B504B41)
+                        {
+                            m_FullPath += ".cpk";
+                        }
+                    }
+
                     File.WriteAllBytes(m_FullPath, lpBuffer);
 
                     return;
@@ -39,23 +51,29 @@ namespace KM.Unpacker
                 Int16 wUnknown1 = TMemoryStream.ReadInt16();
                 Int16 wUnknown2 = TMemoryStream.ReadInt16();
                 UInt32 dwResourceType = TMemoryStream.ReadUInt32(true);
-
-                if (wUnknown2 != 1)
-                {
-                    Byte[] lpResult = new Byte[lpBuffer.Length - 42];
-
-                    Array.Copy(lpBuffer, 42, lpResult, 0, lpResult.Length);
-
-                    File.WriteAllBytes(m_FullPath, lpResult);
-
-                    return;
-                }
-
                 String m_ResourceType = iFromHexString(dwResourceType.ToString("X8"));
 
                 if (m_FullPath.Contains("__Unknown"))
                 {
                     m_FullPath += "." + m_ResourceType;
+                }
+
+                if (wUnknown2 != 1)
+                {
+                    Int32 dwAdditionalLength = 0;
+
+                    if (m_ResourceType == "vdeo")
+                    {
+                        dwAdditionalLength = 4;
+                    }
+
+                    Byte[] lpResult = new Byte[lpBuffer.Length - 42 - dwAdditionalLength];
+
+                    Array.Copy(lpBuffer, 42, lpResult, dwAdditionalLength, lpResult.Length);
+
+                    File.WriteAllBytes(m_FullPath, lpResult);
+
+                    return;
                 }
 
                 Int32 dwDataSize = TMemoryStream.ReadInt32();
